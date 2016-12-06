@@ -11,29 +11,9 @@ repositories {
 
 dependencies {
   compile fileTree(dir: "libs", include: "*.*")
-  // https://mvnrepository.com/artifact/net.java.dev.jna/jna
   compile group: 'net.java.dev.jna', name: 'jna', version: '4.2.2'
 
   testCompile group: 'junit', name: 'junit', version: '4.11'
 }
 
 
-
-apply plugin: 'maven-publish'
-
-publishing {
-  repositories {
-    maven {
-      url "http://mix-software.com:8081/nexus/content/repositories/ultramixer-private-snapshots"
-      credentials {
-        username UM_NEXUS_DEPLOYMENT_USERNAME
-        password UM_NEXUS_DEPLOYMENT_PASSWORD
-      }
-    }
-  }
-  publications {
-    maven(MavenPublication) {
-      from components.java
-    }
-  }
-}
