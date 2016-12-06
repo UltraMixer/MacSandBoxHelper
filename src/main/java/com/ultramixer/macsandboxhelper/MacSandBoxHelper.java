@@ -3,6 +3,7 @@ package com.ultramixer.macsandboxhelper;
 import ca.weblite.objc.Client;
 import ca.weblite.objc.Proxy;
 import com.sun.jna.Pointer;
+import javafx.application.Platform;
 
 import java.awt.*;
 import java.io.File;
@@ -93,6 +94,92 @@ public class MacSandBoxHelper
         {
             throw new IllegalStateException("SecondaryLoop");
         }
+
+        return result;
+    }
+
+    public static java.util.List<File> NSOpenPanel_openPanel_runModal_javafx(String title, boolean multipleMode, boolean canChooseDirectories, boolean canChooseFiles, String[] allowedFileTypes)
+    {
+        final java.util.List<File> result = new ArrayList<File>();
+
+
+        //final EventQueue eventQueue = com.sun.javafx.tk.Toolkit.getToolkit().getSystemEventQueue();
+        //final SecondaryLoop secondaryLoop = eventQueue.createSecondaryLoop();
+
+        // This object will be used as a unique identifier to the nested loop (to
+        // block the execution of the thread until exitNestedEventLoop is called)
+        final Object loopLock = new Object();
+
+
+        // WARNING: dispatch_sync seems to work on most Mac always causes a deadlock and freezes the application on others (in particular MBP with 2 graphics chips)
+        dispatch_async(() ->
+        {
+            Pointer pool = createAutoreleasePool();
+            Proxy peer = objc().sendProxy("NSOpenPanel", "openPanel");
+            peer.send("retain");
+
+            peer.send("setTitle:", title);
+            peer.send("setAllowsMultipleSelection:", multipleMode ? 1 : 0);
+            peer.send("setCanChooseDirectories:", canChooseDirectories ? 1 : 0);
+            peer.send("setCanChooseFiles:", canChooseFiles ? 1 : 0);
+
+            if (allowedFileTypes != null)
+            {
+                Proxy mutableArray = objc().sendProxy("NSMutableArray", "arrayWithCapacity:", allowedFileTypes.length);
+                for (String type : allowedFileTypes)
+                {
+                    mutableArray.send("addObject:", type);
+                }
+                peer.send("setAllowedFileTypes:", mutableArray);
+            }
+
+            if (peer.sendInt("runModal") != 0)
+            {
+                Proxy nsArray = peer.getProxy("URLs");
+                int size = nsArray.sendInt("count");
+                for (int i = 0; i < size; i++)
+                {
+                    Proxy url = nsArray.sendProxy("objectAtIndex:", i);
+                    String path = url.sendString("path");
+                    result.add(new File(path));
+                }
+            }
+
+            drainAutoreleasePool(pool);
+
+            // We are now done. Call exitNestedEventLoop() to unblock
+            // the enterNestedLoop() caller. This needs to run from
+            // the FX Thread so use Platform.runLater()
+            Runnable fxRunner = new Runnable()
+            {
+                public void run()
+                {
+                    try
+                    {
+                        com.sun.javafx.tk.Toolkit.getToolkit().exitNestedEventLoop(loopLock, result);
+                    }
+                    catch (Throwable t)
+                    {
+                        t.printStackTrace();
+                    }
+                }
+            };
+            Platform.runLater(fxRunner);
+
+        });
+
+        // Enter the loop to block the current event handler, but leave UI responsive
+        /*
+        if (!secondaryLoop.enter())
+        {
+            throw new IllegalStateException("SecondaryLoop");
+        }
+        */
+
+        // The next call will block until exitNestedEventLoop is called, however
+// the FX Thread will continue processing UI requests
+        Object loopResult = com.sun.javafx.tk.Toolkit.getToolkit().enterNestedEventLoop(loopLock);
+
 
         return result;
     }

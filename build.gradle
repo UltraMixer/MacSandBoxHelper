@@ -1,5 +1,23 @@
 group 'com.ultramixer'
-version '1.0.0-SNAPSHOT'
+version '0.0.3-SNAPSHOT'
+
+buildscript {
+  repositories {
+    jcenter()
+    mavenLocal()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+  }
+
+  dependencies {
+    classpath group: 'de.dynamicfiles.projects.gradle.plugins', name: 'javafx-gradle-plugin', version: '8.6.0'
+  }
+}
+
+repositories {
+  jcenter()
+  mavenLocal()
+}
+
 
 apply plugin: 'java'
 
@@ -7,13 +25,139 @@ sourceCompatibility = 1.8
 
 repositories {
   mavenCentral()
+  maven {
+    url "http://mix-software.com:8081/nexus/content/repositories/ultramixer-private"
+    credentials {
+      username UM_NEXUS_UM_USERNAME
+      password UM_NEXUS_UM_PASSWORD
+    }
+  }
 }
 
 dependencies {
-  compile fileTree(dir: "libs", include: "*.*")
-  compile group: 'net.java.dev.jna', name: 'jna', version: '4.2.2'
+  compile ('net.java.dev.jna:jna:4.2.2')
+  compile('ca.weblite:ObjCBridge:1.0.0')
 
   testCompile group: 'junit', name: 'junit', version: '4.11'
 }
 
+
+
+apply plugin: 'maven-publish'
+
+publishing {
+  repositories {
+    maven {
+      url "http://mix-software.com:8081/nexus/content/repositories/ultramixer-private-snapshots"
+      credentials {
+        username UM_NEXUS_DEPLOYMENT_USERNAME
+        password UM_NEXUS_DEPLOYMENT_PASSWORD
+      }
+    }
+  }
+  publications {
+    maven(MavenPublication) {
+      from components.java
+    }
+  }
+}
+
+
+apply plugin: 'javafx-gradle-plugin'
+
+// configure javafx-gradle-plugin
+jfx {
+  verbose = true
+  mainClass = "com.ultramixer.macsandboxhelper.TestJavaFX"
+  vendor = "UltraMixer Digital Audio Solutions"
+  appName = "MacSandBoxHelper"
+  jfxMainAppJarName = "MacSandBoxHelper.jar"
+  //bundler = "mac.app"
+  bundler = "mac.appStore"
+  //bundler = "windows.app"
+  // set this to some specific, if your don't want all bundlers running, examples "windows.app", "jnlp", ...
+  deployDir = "src/main/deploy"
+
+  additionalAppResources = "appresources" // contains start_splash.png
+
+  /*
+  manifestAttributes = new HashMap<>();
+  manifestAttributes.put("SplashScreen-Image", "UM-appinstaller-splash.png");
+
+  // other stuff
+
+  jvmArgs = [
+          "-splash:UM-appinstaller-splash.png"
+  ]
+  */
+
+  /*
+
+  jfxAppOutputDir = "build/jfx/app"
+  useEnvironmentRelativeExecutables = true
+
+  // gradle jfxJar
+  css2bin = false
+  preLoader = null // String
+  updateExistingJar = false
+  allPermissions = false
+  manifestAttributes = null // Map<String, String>
+  addPackagerJar = true
+
+  // gradle jfxNative
+  identifier = null
+  // String - setting this for windows-bundlers makes it possible to generate upgradeable installers (using same GUID)
+
+  nativeOutputDir = "build/jfx/native"
+
+  jvmProperties = null // Map<String, String>
+  jvmArgs = null // List<String>
+  userJvmArgs = null // Map<String, String>
+  launcherArguments = null // List<String>
+  nativeReleaseVersion = "1.0"
+  needShortcut = false
+  needMenu = false
+  bundleArguments = [
+          // dont bundle JRE (not recommended, but increases build-size/-speed)
+          runtime: null
+  ]
+  appName = "AppInstaller" // this is used for files below "src/main/deploy", e.g. "src/main/deploy/windows/project.ico"
+  additionalAppResources = null // path to some additional resources when creating application-bundle
+  secondaryLaunchers = [[appName: "somethingDifferent"], [appName: "somethingDifferent2"]]
+  fileAssociations = null // List<Map<String, Object>>
+  noBlobSigning = false // when using bundler "jnlp", you can choose to NOT use blob signing
+  customBundlers = null // List<String>
+  skipNativeLauncherWorkaround205 = false
+
+  skipNativeLauncherWorkaround124 = false
+  skipNativeLauncherWorkaround167 = false
+  skipJNLPRessourcePathWorkaround182 = false
+  skipSigningJarFilesJNLP185 = false
+  skipSizeRecalculationForJNLP185 = false
+
+  // gradle jfxRun
+  runJavaParameter = null // String
+  runAppParameter = null // String
+
+  // per default the outcome of the gradle "jarTask" will be used, set this to specify otherwise (like proguard-output)
+  alternativePathToJarFile = null // String
+
+  // to disable patching of ant-javafx.jar, set this to false
+  usePatchedJFXAntLib = true
+
+  // gradle jfxGenerateKeyStore
+  keyStore = "src/main/deploy/keystore.jks"
+  keyStoreAlias = "myalias"
+  keyStorePassword = "password"
+  keyPassword = null // will default to keyStorePassword
+  keyStoreType = "jks"
+  overwriteKeyStore = false
+
+  certDomain = null // required
+  certOrgUnit = null // defaults to "none"
+  certOrg = null // required
+  certState = null // required
+  certCountry = null // required
+  */
+}
 
